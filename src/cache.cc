@@ -1130,6 +1130,24 @@ int CACHE::check_hit(PACKET *packet)
     }
 
     // hit
+		if(cache_type==IS_LLC)
+		{
+			for (uint32_t way=0; way<NUM_WAY; way++) {
+					if (block[set][way].cpu==packet->cpu and block[set][way].valid && (block[set][way].tag == packet->address)) {
+
+							match_way = way;
+
+							DP ( if (warmup_complete[packet->cpu]) {
+							cout << "[" << NAME << "] " << __func__ << " instr_id: " << packet->instr_id << " type: " << +packet->type << hex << " addr: " << packet->address;
+							cout << " full_addr: " << packet->full_addr << " tag: " << block[set][way].tag << " data: " << block[set][way].data << dec;
+							cout << " set: " << set << " way: " << way << " lru: " << block[set][way].lru;
+							cout << " event: " << packet->event_cycle << " cycle: " << current_core_cycle[cpu] << endl; });
+
+							break;
+					}
+			}
+		}
+	else
     for (uint32_t way=0; way<NUM_WAY; way++) {
         if (block[set][way].valid && (block[set][way].tag == packet->address)) {
 

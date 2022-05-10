@@ -125,7 +125,20 @@ class CACHE : public MEMORY {
             block[i] = new BLOCK[NUM_WAY]; 
 
             for (uint32_t j=0; j<NUM_WAY; j++) {
-                block[i][j].lru = j;
+                if(v1=="LLC" and j<15)
+                {
+                    block[i][j].lru = j;
+                    block[i][j].cpu = 0;
+                }
+                else if(v1=="LLC" and j>=15)
+                {
+                    block[i][j].lru = j-15;
+                    block[i][j].cpu = 1;
+                }
+                else
+                {
+                    block[i][j].lru = j;
+                }
             }
         }
 
@@ -193,8 +206,8 @@ class CACHE : public MEMORY {
          llc_initialize_replacement(),
          update_replacement_state(uint32_t cpu, uint32_t set, uint32_t way, uint64_t full_addr, uint64_t ip, uint64_t victim_addr, uint32_t type, uint8_t hit),
          llc_update_replacement_state(uint32_t cpu, uint32_t set, uint32_t way, uint64_t full_addr, uint64_t ip, uint64_t victim_addr, uint32_t type, uint8_t hit),
-         lru_update(uint32_t set, uint32_t way/*,uint32_t cpu*/),
-        //  lru_update_notLLC(uint32_t set, uint32_t way),
+         lru_update(uint32_t set, uint32_t way,uint32_t cpu),
+         lru_update_notLLC(uint32_t set, uint32_t way),
          fill_cache(uint32_t set, uint32_t way, PACKET *packet),
          replacement_final_stats(),
          llc_replacement_final_stats(),
@@ -222,8 +235,8 @@ class CACHE : public MEMORY {
              get_way(uint64_t address, uint32_t set),
              find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type),
              llc_find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type),
-             lru_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type);
-            //  lru_victim_notLLC(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type);
+             lru_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type),
+             lru_victim_notLLC(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type);
 };
 
 #endif
