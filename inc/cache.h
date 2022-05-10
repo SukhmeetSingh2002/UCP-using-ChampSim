@@ -229,6 +229,10 @@ public:
         // prefetcher_final_stats(),
         l1d_prefetcher_final_stats(),
         l2c_prefetcher_final_stats(),
+        UMON_update(uint32_t cpu, uint32_t set_index, uint32_t way),
+        UMON(uint32_t cpu, uint64_t full_addr, uint32_t set),
+        make_partition(),
+        ucp_update(uint32_t set, uint32_t way, uint32_t cpu),
         llc_prefetcher_final_stats();
 
     void (*l1i_prefetcher_cache_operate)(uint32_t, uint64_t, uint8_t, uint8_t);
@@ -244,7 +248,11 @@ public:
         find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type),
         llc_find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type),
         lru_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type),
+        UMON_find_victim(uint32_t cpu, uint32_t set_index),
         lru_victim_notLLC(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type);
+    
+    uint64_t get_utility(uint32_t cpu, uint32_t a);
+
 };
 
 #endif

@@ -1,0 +1,265 @@
+#include "cache.h"
+#include "ooo_cpu.h"
+
+BLOCK ATD[NUM_CPUS][LLC_SET][LLC_WAY];
+vector<uint32_t> ways_of_cpu(NUM_CPUS);
+uint64_t miss_counter, hit_counter[NUM_CPUS][LLC_WAY], partion_interval = 5000000;
+
+void CACHE::UMON_update(uint32_t cpu, uint32_t set_index, uint32_t way)
+{
+    for (uint32_t i = 0; i < NUM_WAY; i++)
+    {
+        if (ATD[cpu][set_index][i].lru < ATD[cpu][set_index][way].lru)
+        {
+            ATD[cpu][set_index][i].lru++;
+        }
+    }
+    ATD[cpu][set_index][way].lru = 0; // promote to the MRU position
+}
+
+uint32_t CACHE::UMON_find_victim(uint32_t cpu, uint32_t set_index)
+{
+    uint32_t way = 0;
+
+    // fill invalid line first
+    for (way = 0; way < NUM_WAY; way++)
+    {
+        if (ATD[cpu][set_index][way].valid == false)
+        {
+
+            DP(if (warmup_complete[cpu]) {
+            cout << "[" << NAME << "] " << __func__ << " instr_id: " << instr_id << " invalid set: " << set << " way: " << way;
+            cout << hex << " address: " << (full_addr>>LOG2_BLOCK_SIZE) << " victim address: " << ATD[cpu]k[set][way].address << " data: " << ATD[cpu][set][way].data;
+            cout << dec << " lru: " << ATD[cpu][set][way].lru << endl; });
+
+            break;
+        }
+    }
+
+    // LRU victim
+    if (way == NUM_WAY)
+    {
+        for (way = 0; way < NUM_WAY; way++)
+        {
+            if (ATD[cpu][set_index][way].lru == NUM_WAY - 1)
+            {
+
+                DP(if (warmup_complete[cpu]) {
+                cout << "[" << NAME << "] " << __func__ << " instr_id: " << instr_id << " replace set: " << set << " way: " << way;
+                cout << hex << " address: " << (full_addr>>LOG2_BLOCK_SIZE) << " victim address: " << block[set][way].address << " data: " << block[set][way].data;
+                cout << dec << " lru: " << ATD[cpu][set][way].lru << endl; });
+                break;
+            }
+        }
+    }
+
+    if (way == NUM_WAY)
+    {
+        cerr << "[" << NAME << "] " << __func__ << " no victim! set: " << set_index << endl;
+        assert(0);
+    }
+    return way;
+}
+
+uint64_t CACHE::get_utility(uint32_t cpu, uint32_t a)
+{
+    return hit_counter[cpu][a];
+}
+
+void CACHE::UMON(uint32_t cpu, uint64_t full_addr, uint32_t set)
+{
+    uint32_t set_index = set;
+    uint32_t way = 0;
+    for (way = 0; way < NUM_WAY; way++)
+    {
+        if (ATD[cpu][set_index][way].address == full_addr)
+        {
+            if (warmup_complete[cpu])
+                hit_counter[cpu][ATD[cpu][set_index][way].lru]++;
+            break;
+        }
+    }
+    if (way == NUM_WAY)
+    {
+        way = UMON_find_victim(cpu, set_index);
+        if (warmup_complete[cpu])
+            miss_counter++;
+    }
+    ATD[cpu][set_index][way].address = full_addr;
+    UMON_update(cpu, set_index, way);
+    uint32_t completed = 1;
+    for (uint32_t i = 0; i < NUM_CPUS; i++)
+        completed &= warmup_complete[i];
+    if (current_core_cycle[0] - ooo_cpu[0].begin_sim_cycle >= partion_interval and completed)
+    {
+        make_partition();
+        partion_interval += 5000000;
+        for (uint32_t i = 0; i < NUM_CPUS; i++)
+        {
+            for (uint32_t j = 0; j < LLC_WAY; j++)
+                hit_counter[i][j] /= 2;
+        }
+    }
+}
+
+void CACHE::make_partition()
+{
+    uint32_t balance = LLC_WAY - NUM_CPUS;
+    vector<uint32_t> PREV_WAY_OF_CPU = ways_of_cpu;
+    for (uint32_t i = 0; i < NUM_CPUS; i++)
+        ways_of_cpu[i] = 1;
+    while (balance)
+    {
+        uint32_t winner = 0;
+        uint32_t temp = 0;
+        for (uint32_t i = 0; i < NUM_CPUS; i++)
+        {
+            uint32_t k = get_utility(i, ways_of_cpu[i]);
+            if (k > temp)
+            {
+                temp = k;
+                winner = i;
+            }
+        }
+        ways_of_cpu[winner]++;
+        balance--;
+    }
+    vector<uint32_t> left_cpu;
+    for (uint32_t i = 0; i < NUM_CPUS; i++)
+        if (PREV_WAY_OF_CPU[i] < ways_of_cpu[i])
+            left_cpu.push_back(i);
+    uint32_t curr = 0;
+    for (uint32_t i = 0; i < LLC_SET; i++)
+    {
+        vector<uint32_t> temp = PREV_WAY_OF_CPU;
+        for (uint32_t k = 0; k < LLC_WAY; k++)
+        {
+            if (curr == left_cpu.size())
+                break;
+            if (temp[left_cpu[curr]] == ways_of_cpu[left_cpu[curr]])
+                curr++;
+            if (block[i][k].valid == false)
+                block[i][k].cpu = left_cpu[curr], temp[left_cpu[curr]]++;
+            else if (temp[block[i][k].cpu] > ways_of_cpu[block[i][k].cpu] && block[i][k].lru >= ways_of_cpu[block[i][k].cpu])
+            {
+                temp[block[i][k].cpu]--;
+                block[i][k].cpu = left_cpu[curr];
+                temp[left_cpu[curr]]++;
+            }
+        }
+    }
+    for (uint32_t i = 0; i < NUM_CPUS; i++)
+        cout << ways_of_cpu[i] << ' ';
+    cout << endl;
+}
+
+void CACHE::llc_initialize_replacement()
+{
+    for (uint32_t i = 0; i < NUM_CPUS; i++)
+    {
+        ways_of_cpu[i] = LLC_WAY / NUM_CPUS;
+        for (uint32_t j = 0; j < LLC_SET; j++)
+        {
+            for (uint32_t k = 0; k < LLC_WAY; k++)
+            {
+                ATD[i][j][k].lru = k;
+            }
+        }
+    }
+}
+
+// find replacement victim
+uint32_t CACHE::llc_find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type)
+{
+    uint32_t way = 0;
+
+    // fill invalid line first
+    for (way = 0; way < NUM_WAY; way++)
+    {
+        if (block[set][way].valid == false && block[set][way].cpu == cpu)
+        {
+
+            DP(if (warmup_complete[cpu]) {
+            cout << "[" << NAME << "] " << __func__ << " instr_id: " << instr_id << " invalid set: " << set << " way: " << way;
+            cout << hex << " address: " << (full_addr>>LOG2_BLOCK_SIZE) << " victim address: " << block[set][way].address << " data: " << block[set][way].data;
+            cout << dec << " lru: " << block[set][way].lru << endl; });
+
+            break;
+        }
+    }
+
+    // LRU victim
+    if (way == NUM_WAY)
+    {
+        for (way = 0; way < NUM_WAY; way++)
+        {
+            if (block[set][way].lru == ways_of_cpu[cpu] - 1 && block[set][way].cpu == cpu)
+            {
+
+                DP(if (warmup_complete[cpu]) {
+                cout << "[" << NAME << "] " << __func__ << " instr_id: " << instr_id << " replace set: " << set << " way: " << way;
+                cout << hex << " address: " << (full_addr>>LOG2_BLOCK_SIZE) << " victim address: " << block[set][way].address << " data: " << block[set][way].data;
+                cout << dec << " lru: " << block[set][way].lru << endl; });
+
+                break;
+            }
+        }
+    }
+
+    if (way == NUM_WAY)
+    {
+        cerr << "[" << NAME << "] " << __func__ << " no victim! set: " << set << endl;
+        assert(0);
+    }
+
+    return way;
+}
+
+void CACHE::ucp_update(uint32_t set, uint32_t way, uint32_t cpu)
+{
+    for (uint32_t i = 0; i < NUM_WAY; i++)
+    {
+        if (block[set][i].lru < block[set][way].lru && block[set][i].cpu == block[set][way].cpu && block[set][way].cpu == cpu)
+        {
+            block[set][i].lru++;
+        }
+    }
+    block[set][way].lru = 0; // promote to the MRU position
+}
+// called on every cache hit and cache fill
+void CACHE::llc_update_replacement_state(uint32_t cpu, uint32_t set, uint32_t way, uint64_t full_addr, uint64_t ip, uint64_t victim_addr, uint32_t type, uint8_t hit)
+{
+    string TYPE_NAME;
+    if (type == LOAD)
+        TYPE_NAME = "LOAD";
+    else if (type == RFO)
+        TYPE_NAME = "RFO";
+    else if (type == PREFETCH)
+        TYPE_NAME = "PF";
+    else if (type == WRITEBACK)
+        TYPE_NAME = "WB";
+    else
+        assert(0);
+
+    if (hit)
+        TYPE_NAME += "_HIT";
+    else
+        TYPE_NAME += "_MISS";
+
+    if ((type == WRITEBACK) && ip)
+        assert(0);
+
+    // uncomment this line to see the LLC accesses
+    // cout << "CPU: " << cpu << "  LLC " << setw(9) << TYPE_NAME << " set: " << setw(5) << set << " way: " << setw(2) << way;
+    // cout << hex << " paddr: " << setw(12) << paddr << " ip: " << setw(8) << ip << " victim_addr: " << victim_addr << dec << endl;
+
+    // baseline LRU
+    if (hit && (type == WRITEBACK)) // writeback hit does not update LRU state
+        return;
+    UMON(cpu, full_addr,set);
+    return ucp_update(set, way, cpu);
+}
+
+void CACHE::llc_replacement_final_stats()
+{
+}
