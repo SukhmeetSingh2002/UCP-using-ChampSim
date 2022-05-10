@@ -1,0 +1,32 @@
+In file included from /usr/include/getopt.h:24,
+                 from src/main.cc:3:
+/usr/include/features.h:194:3: warning: #warning "_BSD_SOURCE and _SVID_SOURCE are deprecated, use _DEFAULT_SOURCE" [-Wcpp]
+  194 | # warning "_BSD_SOURCE and _SVID_SOURCE are deprecated, use _DEFAULT_SOURCE"
+      |   ^~~~~~~
+src/main.cc: In function ‘uint64_t va_to_pa(uint32_t, uint64_t, uint64_t, uint64_t, uint8_t)’:
+src/main.cc:344:48: warning: variable ‘pr2’ set but not used [-Wunused-but-set-variable]
+  344 |             map <uint64_t, uint64_t>::iterator pr2 = recent_page.begin();
+      |                                                ^~~
+src/ooo_cpu.cc: In member function ‘void O3_CPU::add_load_queue(uint32_t, uint32_t)’:
+src/ooo_cpu.cc:1240:17: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+ 1240 |                 if (LQ.entry[lq_index].producer_id != UINT64_MAX)
+      |                 ^~
+src/ooo_cpu.cc:1243:21: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+ 1243 |                     mem_RAW_dependency(i, rob_index, data_index, lq_index);
+      |                     ^~~~~~~~~~~~~~~~~~
+src/ooo_cpu.cc:1248:17: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+ 1248 |                 if (LQ.entry[lq_index].producer_id != UINT64_MAX)
+      |                 ^~
+src/ooo_cpu.cc:1251:21: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+ 1251 |                     mem_RAW_dependency(i, rob_index, data_index, lq_index);
+      |                     ^~~~~~~~~~~~~~~~~~
+src/ooo_cpu.cc:1254:17: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+ 1254 |                 if (LQ.entry[lq_index].producer_id != UINT64_MAX)
+      |                 ^~
+src/ooo_cpu.cc:1257:21: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+ 1257 |                     mem_RAW_dependency(i, rob_index, data_index, lq_index);
+      |                     ^~~~~~~~~~~~~~~~~~
+src/ooo_cpu.cc: In member function ‘void O3_CPU::complete_instr_fetch(PACKET_QUEUE*, uint8_t)’:
+src/ooo_cpu.cc:1858:18: warning: unused variable ‘instruction_physical_address’ [-Wunused-variable]
+ 1858 |         uint64_t instruction_physical_address = (queue->entry[index].instruction_pa << LOG2_PAGE_SIZE) | (complete_ip & ((1 << LOG2_PAGE_SIZE) - 1));
+      |                  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1,0 +1,28 @@
+#!/usr/bin/bash
+./build_champsim.sh bimodal no no no no ucp ${1?required} 2>./errors.txt
+ret=$?
+if [ $ret -eq 0 ] ; then
+
+  echo "build succesful";
+  x='';
+  for (( c=1; c<=${1}; c++ ))
+  do
+    x+='gcc_13B.trace.xz ';
+  done
+  # echo $x;
+  if [ ${1} -eq 1 ]; then
+    ./run_champsim.sh bimodal-no-no-no-no-ucp-${1}core 1 10 $x
+  elif [ $1 -eq 2 ]; then
+    ./run_2core.sh bimodal-no-no-no-no-ucp-${1}core 1 10 0 $x
+  elif [ $1 -eq 4 ]; then
+    ./run_4core.sh bimodal-no-no-no-no-ucp-${1}core 1 10 0 $x
+  else
+    ./run_8core.sh bimodal-no-no-no-no-ucp-${1}core 1 10 0 $x
+  fi
+fi
+if [ $? -eq 0 ]; then
+echo "run successful";
+else
+echo "run failed";
+fi
+# r -warmup_instructions 1000000 -simulation_instructions 10000000 -traces dpc3_traces/gcc_13B.trace.xz dpc3_traces/gcc_13B.trace.xz
