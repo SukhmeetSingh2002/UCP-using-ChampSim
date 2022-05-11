@@ -15,7 +15,7 @@ then
 
 
     echo "Running your code...\n";
-    ./run_2core.sh bimodal-no-no-no-no-${REP_POLICY}-2core $NUM_WARM $NUM_INS 0 gcc_13B.trace.xz gcc_13B.trace.xz
+    ./run_2core.sh bimodal-no-no-no-no-${REP_POLICY}-2core $NUM_WARM $NUM_INS 0 gcc_13B.trace.xz gcc_13B.trace.xz 
 
     retValue=$?;
     if [ $retValue -eq 0 ]
