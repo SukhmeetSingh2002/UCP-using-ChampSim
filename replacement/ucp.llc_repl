@@ -9,6 +9,11 @@ vector<vector<uint32_t>> PREV_WAY_OF_CPU(LLC_SET,vector<uint32_t>(NUM_CPUS,LLC_W
 
 void CACHE::UMON_update(uint32_t cpu, uint32_t set_index, uint32_t way)
 {
+    // for (uint32_t i = 0; i < NUM_WAY; i++)
+    // {
+    //     cout<< ATD[cpu][set_index][i].lru <<" ";
+    // }
+    // cout<< "\ndone" <<endl;
     for (uint32_t i = 0; i < NUM_WAY; i++)
     {
         if (ATD[cpu][set_index][i].lru < ATD[cpu][set_index][way].lru)
@@ -28,6 +33,7 @@ uint32_t CACHE::UMON_find_victim(uint32_t cpu, uint32_t set_index)
     {
         if (ATD[cpu][set_index][way].valid == false)
         {
+            ATD[cpu][set_index][way].valid=true;
 
             DP(if (warmup_complete[cpu]) {
             cout << "[" << NAME << "] " << __func__ << " instr_id: " << instr_id << " invalid set: " << set << " way: " << way;
@@ -60,6 +66,7 @@ uint32_t CACHE::UMON_find_victim(uint32_t cpu, uint32_t set_index)
         cerr << "[" << NAME << "] " << __func__ << " no victim! set: " << set_index << endl;
         assert(0);
     }
+    // cout<< "way = "<<way <<endl;
     return way;
 }
 
@@ -74,10 +81,10 @@ void CACHE::UMON(uint32_t cpu, uint64_t full_addr, uint32_t set)
     uint32_t way = 0;
     for (way = 0; way < NUM_WAY; way++)
     {
-        if (ATD[cpu][set_index][way].address == full_addr)
+        if (ATD[cpu][set_index][way].valid and ATD[cpu][set_index][way].address == full_addr)
         {
             // if (warmup_complete[cpu])
-                hit_counter[cpu][ATD[cpu][set_index][way].lru]++;
+            hit_counter[cpu][ATD[cpu][set_index][way].lru]++;
             break;
         }
     }
@@ -85,17 +92,17 @@ void CACHE::UMON(uint32_t cpu, uint64_t full_addr, uint32_t set)
     {
         way = UMON_find_victim(cpu, set_index);
         // if (warmup_complete[cpu])
-            miss_counter++;
+        miss_counter++;
     }
     ATD[cpu][set_index][way].address = full_addr;
     UMON_update(cpu, set_index, way);
     // uint32_t completed = 1;
     // for (uint32_t i = 0; i < NUM_CPUS; i++)
     //     completed &= warmup_complete[i];
-    if (current_core_cycle[0] /* - ooo_cpu[0].begin_sim_cycle */ >= partion_interval )
+    if (current_core_cycle[0] >= partion_interval )
     {
-        make_partition();
         cout<< "partion_interval" <<endl;
+        make_partition();
         cout<< partion_interval <<endl;
         partion_interval += 5000000;
         for (uint32_t i = 0; i < NUM_CPUS; i++)
@@ -109,24 +116,7 @@ void CACHE::UMON(uint32_t cpu, uint64_t full_addr, uint32_t set)
 void CACHE::make_partition()
 {
     uint32_t balance = LLC_WAY - NUM_CPUS;
-    // vector<uint32_t> PREV_WAY_OF_CPU = ways_of_cpu;
-    // cout<< "Before" <<endl;
-    // for (uint32_t i = 0; i < LLC_SET; i++)
-    // {
-    //     for (uint32_t j = 0; j < LLC_SET; j++)
-    //         cout<< PREV_WAY_OF_CPU[i][j] <<" ";
-    //     cout<< endl;
-    // }
-    // for (uint32_t i = 0; i < LLC_SET; i++)
-    // {
-    //     PREV_WAY_OF_CPU[i]=ways_of_cpu;
-    // }
-    // cout<< "After" <<endl;
-    // for (uint32_t i = 0; i < LLC_SET; i++)
-    // {
-    //     cout<< ways_of_cpu[i] <<" ";
-    // }
-    //     cout<< endl;
+
     
     for (uint32_t i = 0; i < NUM_CPUS; i++)
     {
@@ -150,39 +140,7 @@ void CACHE::make_partition()
         ways_of_cpu[winner]++;
         balance--;
     }
-    
-    // vector<uint32_t> left_cpu;
-
-    // for (uint32_t i = 0; i < NUM_CPUS; i++)
-    //     if (PREV_WAY_OF_CPU[i] < ways_of_cpu[i])
-    //         left_cpu.push_back(i);
-    
-    // uint32_t curr = 0;
-    // for (uint32_t i = 0; i < LLC_SET; i++)
-    // {
-    //     vector<uint32_t> current_copy_of_ways_of_cpu = PREV_WAY_OF_CPU;
-    //     for (uint32_t k = 0; k < LLC_WAY; k++)
-    //     {
-    //         if (curr == left_cpu.size())
-    //             break;
-    //         if (current_copy_of_ways_of_cpu[left_cpu[curr]] == ways_of_cpu[left_cpu[curr]])
-    //             curr++;
-    //         if (block[i][k].valid == false)
-    //             block[i][k].cpu = left_cpu[curr], current_copy_of_ways_of_cpu[left_cpu[curr]]++;
-    //         // TODO: wrong
-    //         else if (current_copy_of_ways_of_cpu[block[i][k].cpu] > ways_of_cpu[block[i][k].cpu] && block[i][k].lru >= ways_of_cpu[block[i][k].cpu])
-    //         {
-    //             current_copy_of_ways_of_cpu[block[i][k].cpu]--;
-    //             block[i][k].cpu = left_cpu[curr];
-    //             block[i][k].lru = current_copy_of_ways_of_cpu[left_cpu[curr]]++;
-    //         }
-    //     }
-    // }
-    // for (uint32_t i = 0; i < NUM_CPUS; i++)
-    //     cout << ways_of_cpu[i] << ' ';
-    // cout << endl;
 }
-
 void CACHE::llc_initialize_replacement()
 {
     for (uint32_t i = 0; i < NUM_CPUS; i++)
@@ -258,7 +216,7 @@ uint32_t CACHE::llc_find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, c
                 block[set][way].cpu=cpu;
                 block[set][way].lru=PREV_WAY_OF_CPU[set][cpu];
                 PREV_WAY_OF_CPU[set][block[set][way].cpu]++;
-                
+
                 DP(if (warmup_complete[cpu]) {
                 cout << "[" << NAME << "] " << __func__ << " instr_id: " << instr_id << " invalid set: " << set << " way: " << way;
                 cout << hex << " address: " << (full_addr>>LOG2_BLOCK_SIZE) << " victim address: " << block[set][way].address << " data: " << block[set][way].data;
@@ -289,7 +247,7 @@ uint32_t CACHE::llc_find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, c
                 }
             }
         }
-
+        
     }
 
     if (way == NUM_WAY)
@@ -339,7 +297,7 @@ void CACHE::ucp_update(uint32_t set, uint32_t way, uint32_t cpu)
     // for (uint32_t i = 0; i < NUM_WAY; i++)
     //     cout<< block[set][i].lru <<" ";
     // cout<< endl;
-    
+
     // cout<< "cpu" <<endl;
     // for (uint32_t i = 0; i < NUM_WAY; i++)
     //     cout<< block[set][i].cpu <<" ";
@@ -393,6 +351,10 @@ void CACHE::llc_update_replacement_state(uint32_t cpu, uint32_t set, uint32_t wa
     // baseline LRU
     if (hit && (type == WRITEBACK)) // writeback hit does not update LRU state
         return;
+    // cout<< "cpu"<<cpu <<endl;
+    // cout<< "SET"<<set <<endl;
+    // cout<< "way"<<way <<endl;
+    // cout<< "full_addr"<<full_addr <<endl;
     UMON(cpu, full_addr,set);
     return ucp_update(set, way, cpu);
 }
