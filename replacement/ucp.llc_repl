@@ -101,9 +101,9 @@ void CACHE::UMON(uint32_t cpu, uint64_t full_addr, uint32_t set)
     //     completed &= warmup_complete[i];
     if (current_core_cycle[0] >= partion_interval )
     {
-        cout<< "partion_interval" <<endl;
+        // cout<< "partion_interval" <<endl;
         make_partition();
-        cout<< partion_interval <<endl;
+        // cout<< partion_interval <<endl;
         partion_interval += 5000000;
         for (uint32_t i = 0; i < NUM_CPUS; i++)
         {
@@ -115,34 +115,101 @@ void CACHE::UMON(uint32_t cpu, uint64_t full_addr, uint32_t set)
 
 void CACHE::make_partition()
 {
-    uint32_t balance = LLC_WAY - NUM_CPUS;
-
+    // for (int i = 0; i < NUM_CPUS; i++)
+    // {
+    //     for (int j = 0; j < LLC_WAY; j++)
+    //     {
+    //         cout<< hit_counter[i][j] <<" ";
+    //     }
+    //     cout<< endl;
+    // }
+    // assert(0);
     
-    for (uint32_t i = 0; i < NUM_CPUS; i++)
-    {
-        cout<< ways_of_cpu[i] <<endl;
-    }
+    uint32_t balance = LLC_WAY - NUM_CPUS;
+    // vector<uint32_t> PREV_WAY_OF_CPU = ways_of_cpu;
+    // cout<< "Before" <<endl;
+    // for (uint32_t i = 0; i < LLC_SET; i++)
+    // {
+    //     for (uint32_t j = 0; j < LLC_SET; j++)
+    //         cout<< PREV_WAY_OF_CPU[i][j] <<" ";
+    //     cout<< endl;
+    // }
+    // for (uint32_t i = 0; i < LLC_SET; i++)
+    // {
+    //     PREV_WAY_OF_CPU[i]=ways_of_cpu;
+    // }
+    // cout<< "After" <<endl;
+    // for (uint32_t i = 0; i < LLC_SET; i++)
+    // {
+    //     cout<< ways_of_cpu[i] <<" ";
+    // }
+    //     cout<< endl;
+
+    // for (uint32_t i = 0; i < NUM_CPUS; i++)
+    // {
+    //     cout<< ways_of_cpu[i] <<" ";
+    // }
+    // cout<< endl;
     for (uint32_t i = 0; i < NUM_CPUS; i++)
         ways_of_cpu[i] = 1;
     while (balance)
     {
+        // cout<< "balance " ;
+        // cout<< balance <<endl;
+        // cout<< "ways_of_cpu[0] "<<ways_of_cpu[0] <<endl;
+        // cout<< "ways_of_cpu[1] "<<ways_of_cpu[1] <<endl;
+        // for (int i = 0; i < NUM_CPUS; i++)
+        // {
+        //     for (int j = 0; j < LLC_WAY; j++)
+        //     {
+        //         cout<< hit_counter[i][j] <<" ";
+        //     }
+        //     cout<< endl;
+        // }
+        // sleep(5);
         uint32_t winner = 0;
-        uint32_t temp = 0;
-        for (uint32_t i = 0; i < NUM_CPUS; i++)
+        double final_max_utility = 0;
+        uint32_t req_ways=0;
+        for (uint32_t current_cpu = 0; current_cpu < NUM_CPUS; current_cpu++)
         {
-            uint32_t k = get_utility(i, ways_of_cpu[i]);
-            if (k > temp)
+            double max_utility = 0;
+            uint32_t current_utility=0,current_ways=0;
+            for (uint32_t i = ways_of_cpu[current_cpu]+1; i <= balance+ways_of_cpu[current_cpu]; i++)
             {
-                temp = k;
-                winner = i;
+                current_utility += get_utility(current_cpu,i-1);
+                double real_utility = 1.0 * current_utility/(i-ways_of_cpu[current_cpu]);
+                // cout<< "current_utility" <<endl;
+                // cout<< current_utility <<endl;
+                if(real_utility>max_utility)
+                {
+                    max_utility=real_utility;
+                    current_ways=i;
+                }
+            }
+            if (max_utility > final_max_utility)
+            {
+                final_max_utility = max_utility;
+                winner = current_cpu;
+                req_ways=current_ways;
             }
         }
-        ways_of_cpu[winner]++;
-        balance--;
+        balance-=req_ways-ways_of_cpu[winner];
+        ways_of_cpu[winner]=req_ways;
+        // cout<< "req_ways "<<req_ways <<endl;
     }
+   
 }
+
 void CACHE::llc_initialize_replacement()
 {
+    uint32_t DIVIDER = LLC_WAY/NUM_CPUS;
+    for (uint32_t i=0; i<NUM_SET; i++) {    
+        for (uint32_t j=0; j<NUM_WAY; j++) 
+        {
+            block[i][j].lru = j%DIVIDER;
+            block[i][j].cpu = j/DIVIDER;
+        }
+    }
     for (uint32_t i = 0; i < NUM_CPUS; i++)
     {
         ways_of_cpu[i] = LLC_WAY / NUM_CPUS;

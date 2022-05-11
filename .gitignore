@@ -13,3 +13,5 @@ results*
 Build.log
 dpc3_traces/
 .vscode/
+replacement/check*
+replacement/chk*

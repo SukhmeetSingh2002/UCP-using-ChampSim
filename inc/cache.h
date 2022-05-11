@@ -121,20 +121,11 @@ class CACHE : public MEMORY {
 
         // cache block
         block = new BLOCK* [NUM_SET];
-        uint32_t DIVIDER = LLC_WAY/NUM_CPUS;
         for (uint32_t i=0; i<NUM_SET; i++) {
             block[i] = new BLOCK[NUM_WAY]; 
             
             for (uint32_t j=0; j<NUM_WAY; j++) {
-                if(v1=="LLC")
-                {
-                    block[i][j].lru = j%DIVIDER;
-                    block[i][j].cpu = j/DIVIDER;
-                }
-                else
-                {
                     block[i][j].lru = j;
-                }
             }
         }
         for (uint32_t i=0; i<NUM_CPUS; i++) {
