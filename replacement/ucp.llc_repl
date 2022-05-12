@@ -7,8 +7,8 @@ uint64_t miss_counter, hit_counter[NUM_CPUS][LLC_WAY], partion_interval = 500000
 vector<vector<uint32_t>> PREV_WAY_OF_CPU(LLC_SET,vector<uint32_t>(NUM_CPUS,LLC_WAY/NUM_CPUS));
 // FILE* file_name = fopen("input.txt","r");
 FILE* output_Stats = fopen("output.txt","w");
-#define SIZE_OF_SETS 64
-unsigned rand_sets[SIZE_OF_SETS];
+// #define SIZE_OF_SETS 64
+// unsigned rand_sets[SIZE_OF_SETS];
 
 
 void CACHE::UMON_update(uint32_t cpu, uint32_t set_index, uint32_t way)
@@ -76,11 +76,11 @@ uint64_t CACHE::get_utility(uint32_t cpu, uint32_t a)
 
 void CACHE::UMON(uint32_t cpu, uint64_t full_addr, uint32_t set)
 {
-    int found =0;
-    for(int i=0;i<SIZE_OF_SETS;i++){
-        if(rand_sets[i]  == set) found =1;
-    }
-    if(found ==0) return;
+    // int found =0;
+    // for(int i=0;i<SIZE_OF_SETS;i++){
+    //     if(rand_sets[i]  == set) found =1;
+    // }
+    // if(found ==0) return;
     uint32_t set_index = set;
     uint32_t way = 0;
     for (way = 0; way < NUM_WAY; way++)
@@ -153,24 +153,24 @@ void CACHE::make_partition()
 
 void CACHE::llc_initialize_replacement()
 {
-    srand(time(NULL));
-    unsigned long rand_seed = 1;
-    unsigned long max_rand = 1048576;
-    uint32_t my_set = LLC_SET;
-    int do_again = 0;
-    for (int i=0; i<SIZE_OF_SETS; i++) {
-        do {
-            do_again = 0;
-            rand_seed = rand_seed * 1103515245 + 12345;
-            rand_sets[i] = ((unsigned) ((rand_seed/65536) % max_rand)) % my_set;
-            for (int j=0; j<i; j++) {
-                if (rand_sets[i] == rand_sets[j]) {
-                    do_again = 1;
-                    break;
-                }
-            }
-        } while (do_again);
-    }
+    // srand(time(NULL));
+    // unsigned long rand_seed = 1;
+    // unsigned long max_rand = 1048576;
+    // uint32_t my_set = LLC_SET;
+    // int do_again = 0;
+    // for (int i=0; i<SIZE_OF_SETS; i++) {
+    //     do {
+    //         do_again = 0;
+    //         rand_seed = rand_seed * 1103515245 + 12345;
+    //         rand_sets[i] = ((unsigned) ((rand_seed/65536) % max_rand)) % my_set;
+    //         for (int j=0; j<i; j++) {
+    //             if (rand_sets[i] == rand_sets[j]) {
+    //                 do_again = 1;
+    //                 break;
+    //             }
+    //         }
+    //     } while (do_again);
+    // }
     
     uint32_t DIVIDER = LLC_WAY/NUM_CPUS;
     for (uint32_t i=0; i<NUM_SET; i++) {    
