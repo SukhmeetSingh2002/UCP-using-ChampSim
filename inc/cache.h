@@ -221,13 +221,13 @@ class CACHE : public MEMORY {
              find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type),
              llc_find_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type),
              lru_victim(uint32_t cpu, uint64_t instr_id, uint32_t set, const BLOCK *current_set, uint64_t ip, uint64_t full_addr, uint32_t type);
-    
+    // Funciton declarations of functions related to UMON
     void UMON(uint32_t cpu,uint64_t full_addr,uint32_t set),
          UMON_update(uint32_t cpu, uint32_t set_index, uint32_t way),
          make_partition(),
          ucp_update(uint32_t set,uint32_t way,uint32_t cpu);
     uint32_t UMON_find_victim(uint32_t cpu, uint32_t set_index);
-    uint64_t get_utility(uint32_t cpu, uint32_t a);
+    uint64_t get_utility(uint32_t cpu, uint32_t a);    
 };
 
 #endif
