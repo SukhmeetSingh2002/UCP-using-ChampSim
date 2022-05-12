@@ -1218,11 +1218,12 @@ int CACHE::check_hit(PACKET *packet)
   }
 
   // hit
-  if (cache_type == IS_LLC)
+  if (cache_type == IS_LLC) // if the cache is LLC 
   {
     for (uint32_t way = 0; way < NUM_WAY; way++)
     {
       if (block[set][way].cpu == packet->cpu and block[set][way].valid && (block[set][way].tag == packet->address))
+      //The cpu of the block must be equal to the cpu accessing the packet.
       {
 
         match_way = way;
@@ -1237,7 +1238,7 @@ int CACHE::check_hit(PACKET *packet)
       }
     }
   }
-  else
+  else // Other caches are private to the core so no need to check for cpu.
     for (uint32_t way = 0; way < NUM_WAY; way++)
     {
       if (block[set][way].valid && (block[set][way].tag == packet->address))
